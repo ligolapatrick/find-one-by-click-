@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Searching for Relationship</title>
+  <link rel="stylesheet" href="instantfree.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #ff4d4d;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    main {
+      padding: 20px;
+    }
+    .user-card-container {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      justify-content: start;
+      padding-left: 10px; /* Adjust for padding */
+    }
+    .user-card {
+      position: relative;
+      width: 100%; /* Adjusted width for responsiveness */
+      max-width: 500px; /* Maximum width for larger screens */
+      margin: 10px; /* Adjusted margin for better spacing */
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px #2415151a;
+      text-align: center;
+      scroll-snap-align: start;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+    .user-card img {
+      width: 100%;
+      height: auto; /* Adjusted height for responsiveness */
+      object-fit: cover;
+    }
+    .message-input {
+      display: none; /* Initially hidden */
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 5px;
+      border-radius: 5px;
+    }
+    .message-input input {
+      flex: 1;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .message-input button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .message-input button:hover {
+      background-color: #0056b3;
+    }
+    .user-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff86;
+      color: hwb(0 11% 82% / 0.718);
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+
+    /* Media Queries for Responsive Design */
+    @media (max-width: 768px) {
+      .user-card {
+        width: 90%; /* Adjusted width for smaller screens */
+      }
+    }
+
+    @media (max-width: 480px) {
+      .user-card {
+        width: 100%; /* Full width for very small screens */
+      }
+      .message-input {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .message-input input {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+      .message-input button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Searching for Relationship</h1>
+    <nav class="navbar">
+      <ul>
+        <li><a href="instantdate.html">Instant Date</a></li>
+        <li><a href="secretcrush.html">SecretCrush</a></li>
+        <li><a href="moodmatcher.html">MoodMatcher</a></li>
+        <li><a href="virtualmeetup.html">VirtualMeetup</a></li>
+      </ul>
+    </nav>
+  </header>
+  
+  <main>
+    <section class="hangout-section">
+      <h2>Find People who are Searching for Relationship</h2>
+      <p id="people-count">People currently in this section: 0</p>
+      <div id="hangout-container" class="user-card-container">
+        <!-- Available users will be dynamically loaded here -->
+      </div>
+    </section>
+  </main>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/searching-for-relationship')
+        .then(response => response.json())
+        .then(users => {
+          const container = document.getElementById('hangout-container');
+          const peopleCount = document.getElementById('people-count');
+          container.innerHTML = '';
+          peopleCount.textContent = `People currently in this section: ${users.length}`;
+          users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.className = 'user-card';
+            userElement.innerHTML = `
+              <img src="${user.profilePicture}" alt="${user.username}">
+              <div class="user-info">
+                <h3>${user.username}, ${user.age}</h3>
+                <p>Interests: ${user.interests}</p>
+                <p>Location: ${user.location}</p>
+              </div>
+              <div class="message-input">
+                <input type="text" placeholder="Send a message...">
+                <button onclick="sendMessage(${user.id})">Send</button>
+              </div>
+            `;
+            userElement.addEventListener('click', () => {
+              const messageInput = userElement.querySelector('.message-input');
+              messageInput.style.display = 'flex';
+            });
+            container.appendChild(userElement);
+          });
+        })
+        .catch(error => console.error('Error fetching users:', error));
+    });
+
+    function sendMessage(userId) {
+      const messageInput = document.querySelector(`.user-card[data-user-id="${userId}"] .message-input input`);
+      const message = messageInput.value;
+      if (message) {
+        fetch('/api/send-message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ userId, message })
+        }).then(response => {
+          if (response.ok) {
+            alert('Message sent!');
+            messageInput.value = '';
+          } else {
+            alert('Failed to send message');
+          }
+        }).catch(error => console.error('Error sending message:', error));
+      }
+    }
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    const container = document.querySelector('.user-card-container');
+    container.addEventListener('mousedown', (e) => {
+      isDown = true;
+      container.classList.add('active');
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+    });
+    container.addEventListener('mouseleave', () => {
+      isDown = false;
+      container.classList.remove('active');
+    });
+    container.addEventListener('mouseup', () => {
+      isDown = false;
+      container.classList.remove('active');
+    });
+    container.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX) * 3; //scroll-fast
+      container.scrollLeft = scrollLeft - walk;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VirtualMeetup</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 0;
+    }
+    nav {
+      background-color: #007bff;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+    nav a {
+      color: white;
+      margin: 0 10px;
+      text-decoration: none;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .virtual-events-section, .live-stream-section {
+      padding: 20px;
+    }
+    .virtual-event-card, .live-stream-card {
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .live-stream-video {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: black;
+    }
+    #live-video {
+      width: 100%;
+      height: auto;
+    }
+    .live-comments {
+      position: absolute;
+      bottom: 50px;
+      left: 10px;
+      right: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      color: white;
+    }
+    .comment {
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 5px;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+    #comment-input {
+      width: calc(100% - 60px);
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    #likes-container {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .like {
+      background-color: rgba(255, 255, 255, 0.5);
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+    <nav>
+        <a href="moodmatcher">MoodMatcher</a> |
+        <a href="secretcrush">SecretCrush</a> |
+        <a href="instantdate">Instant Date</a> |
+        <a href="freetohangout">Free to Hangout</a> |
+    </nav>
+     <hr>
+     <div></div>
+  <main>
+    <section class="virtual-events-section">
+      <h2>Create a Virtual Meetup and Start Live Stream</h2>
+      <form id="virtual-event-form" onsubmit="createEventAndStartStream(event)">
+        <label for="event-title">Event Title:</label>
+        <input type="text" id="event-title" name="event-title" required>
+        
+        <label for="event-date">Event Date:</label>
+        <input type="datetime-local" id="event-date" name="event-date" required>
+        
+        <label for="event-description">Event Description:</label>
+        <textarea id="event-description" name="event-description" required></textarea>
+        
+        <button type="submit">Create Event and Start Live Stream</button>
+      </form>
+
+      <h2>Upcoming Virtual Meetups</h2>
+      <div id="virtual-events-container" class="virtual-events-container">
+        <!-- Virtual events will be dynamically loaded here -->
+      </div>
+    </section>
+    
+    <section class="live-stream-section">
+      <h2>Live Streaming</h2>
+      <div id="live-streams-container" class="live-streams-container">
+        <!-- Live streams will be dynamically loaded here -->
+      </div>
+      <div id="live-stream-video" class="live-stream-video" style="display: none;">
+        <video id="live-video" autoplay></video>
+        <div id="live-comments" class="live-comments">
+          <!-- Live comments will be dynamically loaded here -->
+        </div>
+        <input type="text" id="comment-input" placeholder="Type a comment...">
+        <button onclick="sendComment()">Send</button>
+        <button onclick="stopLiveStream()">Stop Live Stream</button>
+        <div id="likes-container" class="likes-container">
+          <button onclick="sendLike()">👍</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/virtual-events')
+        .then(response => response.json())
+        .then(events => {
+          const container = document.getElementById('virtual-events-container');
+          container.innerHTML = '';
+          events.forEach(event => {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'virtual-event-card';
+            eventElement.innerHTML = `
+              <h3>${event.title}</h3>
+              <p>Date: ${event.date}</p>
+              <p>${event.description}</p>
+              <button onclick="joinVirtualEvent(${event.id})">Join Event</button>
+            `;
+            container.appendChild(eventElement);
+          });
+        })
+        .catch(error => console.error('Error fetching events:', error));
+      
+      fetch('/api/live-streams')
+        .then(response => response.json())
+        .then(streams => {
+          const container = document.getElementById('live-streams-container');
+          container.innerHTML = '';
+          streams.forEach(stream => {
+            const streamElement = document.createElement('div');
+            streamElement.className = 'live-stream-card';
+            streamElement.innerHTML = `
+              <h3>${stream.title}</h3>
+              <p>Host: ${stream.host}</p>
+              <button onclick="joinLiveStream('${stream.id}')">Join Live Stream</button>
+            `;
+            container.appendChild(streamElement);
+          });
+        })
+        .catch(error => console.error('Error fetching live streams:', error));
+    });
+
+    function createEventAndStartStream(event) {
+      event.preventDefault();
+      const title = document.getElementById('event-title').value;
+      const date = document.getElementById('event-date').value;
+      const description = document.getElementById('event-description').value;
+
+      fetch('/api/create-virtual-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title, date, description })
+      }).then(response => {
+        if (response.ok) {
+          alert('Event created successfully!');
+          startLiveStream(title);
+        } else {
+          alert('Failed to create event');
+        }
+      }).catch(error => console.error('Error creating event:', error));
+    }
+
+    function startLiveStream(title) {
+      fetch('/api/start-live-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title })
+      }).then(response => {
+        if (response.ok) {
+          alert('Live stream started successfully!');
+          document.getElementById('live-stream-video').style.display = 'block';
+          startCamera();
+        } else {
+          alert('Failed to start live stream');
+        }
+      }).catch(error => console.error('Error starting live stream:', error));
+    }
+
+    function startCamera() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          const video = document.getElementById('live-video');
+          video.srcObject = stream;
+          video.play();
+        })
+        .catch(error => console.error('Error accessing camera:', error));
+    }
+
+    function stopLiveStream() {
+      const video = document.getElementById('live-video');
+      const stream = video.srcObject;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+      video.srcObject = null;
+      document.getElementById('live-stream-video').style.display = 'none';
+      alert('Live stream stopped');
+      location.reload();
+    }
+
+    function joinVirtualEvent(eventId) {
+      fetch('/api/register-virtual-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ eventId })
+      }).then(response => {
+        if (response.ok) {
+          alert('You have successfully joined the virtual event!');
+        } else {
+          alert('Failed to join the virtual event');
+        }
+      }).catch(error => console.error('Error joining virtual event:', error));
+    }
+
+    function joinLiveStream(streamId) {
+      window.location.href = `/live-stream?streamId=${streamId}`;
+    }
+
+    function sendComment() {
+      const comment = document.getElementById('comment-input').value;
+      if (comment) {
+        const commentElement = document.createElement('div');
+        commentElement.className = 'comment';
+        commentElement.textContent = comment;
+        document.getElementById('live-comments').appendChild(commentElement);
+        document.getElementById('comment-input').value = '';
+      }
+    }
+
+    function sendLike() {
+      const likeElement = document.createElement('div');
+      likeElement.className = 'like';
+      likeElement.textContent = '👍';
+      document.getElementById('likes-container').appendChild(likeElement);
+    }
+  </script>
+</body>
+</html>

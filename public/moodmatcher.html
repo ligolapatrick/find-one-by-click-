@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoodMatcher</title>
+  <link rel="stylesheet" href="altenate.css">
+  <script src="utilities.js" defer></script>
+  <script src="scripts.js" defer></script>
+</head>
+<body>
+  <nav>
+    <a href="moodmatcher">MoodMatcher</a> |
+    <a href="secretcrush">SecretCrush</a> |
+    <a href="instantdate">Instant Date</a> |
+    <a href="freetohangout">Free to Hangout</a> |
+</nav>
+ <hr>
+ <div></div>
+  
+  <main>
+    <section class="mood-section">
+      <h2>Select Your Mood</h2>
+      <select id="user-mood" class="mood-dropdown">
+        <option value="excited">Excited</option>
+        <option value="relaxed">Relaxed</option>
+        <option value="sad">Sad</option>
+        <option value="adventurous">Adventurous</option>
+        <!-- Add more options as needed -->
+      </select>
+      <button onclick="updateMood()">Update Mood</button>
+      <h2>Matches Based on Your Mood</h2>
+      <div id="mood-matches-container" class="matches-container">
+        <!-- Mood matches will be dynamically loaded here -->
+      </div>
+    </section>
+  </main>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/match-mood')
+        .then(response => response.json())
+        .then(matches => {
+          const container = document.getElementById('mood-matches-container');
+          container.innerHTML = '';
+          matches.forEach(match => {
+            const matchElement = document.createElement('div');
+            matchElement.className = 'match-card';
+            matchElement.innerHTML = `
+              <h3>${match.username}</h3>
+              <p>Mood: ${match.mood}</p>
+              <img src="${match.profilePicture}" alt="${match.username}" ondblclick="sendMoodMatchRequest(${match.id})">
+            `;
+            matchElement.querySelector('img').addEventListener('click', (e) => handleTap(e, match.id));
+            container.appendChild(matchElement);
+          });
+        })
+        .catch(error => console.error('Error fetching matches:', error));
+    });
+
+    let tapTimeout;
+    let tapCount = 0;
+
+    function handleTap(event, userId) {
+      tapCount++;
+      if (tapTimeout) {
+        clearTimeout(tapTimeout);
+      }
+
+      tapTimeout = setTimeout(() => {
+        if (tapCount === 2) {
+          sendMoodMatchRequest(userId);
+        } else if (tapCount === 3) {
+          window.location.href = `/messages?userId=${userId}`;
+        }
+        tapCount = 0;
+      }, 300);
+    }
+
+    function updateMood() {
+      const mood = document.getElementById('user-mood').value;
+      fetch('/api/update-mood', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ mood })
+      }).then(response => {
+        if (response.ok) {
+          alert('Mood updated successfully!');
+        } else {
+          alert('Failed to update mood');
+        }
+      }).catch(error => console.error('Error updating mood:', error));
+    }
+
+    function sendMoodMatchRequest(userId) {
+      fetch('/api/send-mood-match-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId })
+      }).then(response => {
+        if (response.ok) {
+          alert('Mood match request sent!');
+        } else {
+          alert('Failed to send mood match request');
+        }
+      }).catch(error => console.error('Error sending mood match request:', error));
+    }
+
+    function viewProfile(userId) {
+      window.location.href = `/profile?userId=${userId}`;
+    }
+    function handleTap(event, userId) {
+  tapCount++;
+  if (tapTimeout) {
+    clearTimeout(tapTimeout);
+  }
+
+  tapTimeout = setTimeout(() => {
+    if (tapCount === 2) {
+      sendMoodMatchRequest(userId);
+    } else if (tapCount === 3) {
+      window.location.href = `/messages.html?userId=${userId}`;
+    }
+    tapCount = 0;
+  }, 300);
+}
+fetch('http://localhost:3000/api/users')
+  .then(response => response.json())
+  .then(data => {
+    if (Array.isArray(data)) {
+      // Process the data
+    } else {
+      console.error("Data is not an array");
+    }
+  })
+  .catch(error => {
+    console.error("Error fetching users:", error);
+  });
+
+  </script>
+</body>
+</html>

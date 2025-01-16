@@ -1,0 +1,86 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: hsl(0, 34%, 18%);
+    background-image: url('/images/Coffee Room.jpg'); /* Your path */
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+  }
+  
+  header {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    text-align: center;
+  }
+  
+  .main {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .centered-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .chat-window {
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 5px;
+    background-color: white;
+  }
+  
+  .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .boards {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .board {
+    flex: 1;
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+  
+  textarea {
+    width: 100%;
+    height: 300px;
+    padding: 10px;
+    border: 1px solid #b88383;
+    border-radius: 5px;
+    resize: none;
+  }
+     /* Media Queries for Responsive Design */
+     @media (max-width: 768px) {
+      .user-card {
+        width: 90%; /* Adjusted width for smaller screens */
+      }
+    }
+
+    @media (max-width: 480px) {
+      .user-card {
+        width: 100%; /* Full width for very small screens */
+      }
+      .message-input {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .message-input input {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+      .message-input button {
+        width: 100%;
+      }
+    }

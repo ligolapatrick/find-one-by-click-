@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find One by Click</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+   
+  </nav>
+  <hr>
+  <h1>Welcome to Find One by Click</h1>
+  <header>
+    <div class="top-right"></div>
+    <a href="/searching" class="nav-item">click to search for people anywhere</a>
+    <p id="user-welcome">Welcome, <span id="username"></span>!</p>
+    <div class="dropdown-menu" id="dropdown-menu">
+      <a href="/searching">searching</a> |
+  </div>
+  </header>
+  <main>
+  </div>
+  <main class="dashboard">
+    <div class="left-side">
+      <section class="category">
+        <div class="category-header">
+          <h2>nearby users</h2>
+        </div>
+        <div class="single-card">
+          <div class="user-card">
+            <a href="nearby-users.html"><img src="images/Matches.jpg" alt="User 1"></a>
+          </div>
+        </div>
+      </section>
+    </div>
+    
+    <div class="right-side">
+      <section class="category">
+        <div class="category-header">
+          <h2>voice-chat-room</h2>
+        </div>
+        <div class="single-card">
+          <div class="user-card">
+            <a href="voice-chat-room.html"><img src="images/Online Friends.jpg" alt="User 2"></a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <main class="dashboard">
+    <div class="left-side">
+      <section class="category">
+        <div class="category-header">
+          <h2>instant-date</h2>
+        </div>
+        <div class="single-card">
+          <div class="user-card">
+            <a href="instantdate.html"><img src="images/friend-requests.jpg" alt="User 1"></a>
+          </div>
+        </div>
+      </section>
+    </div>
+    
+    <div class="right-side">
+      <section class="category">
+        <div class="category-header">
+          <h2>Mood Matcher</h2>
+        </div>
+        <div class="single-card">
+          <div class="user-card">
+            <a href="moodmatcher.html"><img src="images/LoveConnect calendar and messaging icon.png" alt="User 2"></a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <main class="dashboard">
+    <div class="left-side">
+      <section class="category">
+        <div class="category-header">
+          <h2>free-today</h2>
+        </div>
+        <div class="single-card">
+          <div class="user-card">
+            <a href="free-today.html"><img src="images/Profile Verification.jpg" alt="User 1"></a>
+          </div>
+        </div>
+      </section>
+    </div>
+    
+    <div class="right-side">
+      <section class="category">
+        <div class="category-header">
+          <h2>coffee-room</h2>
+        </div>
+        <div class="single-card">
+          <div class="user-card">
+            <a href="coffee-room.html"><img src="images/Coffee Room.jpg" alt="User 2"></a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <main class="dashboard">
+  <div class="left-side">
+    <section class="category">
+      <div class="category-header">
+        <h2>Secret Crush</h2>
+      </div>
+      <div class="single-card">
+        <div class="user-card">
+          <a href="secretcrush.html"><img src="images/loveconect dating app images.png" alt="User 1"></a>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+  <div class="right-side">
+    <section class="category">
+      <div class="category-header">
+        <h2>about app</h2>
+      </div>
+      <div class="single-card">
+        <div class="user-card">
+          <a href="about-app.html"><img src="images/about.jpg" alt="User 2"></a>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<nav class="bottom-nav">
+  <a href="/">Home</a> |
+  <a href="/profile">Profile</a> |
+  <a href="/matches">Matches</a> |
+  <a href="/speed-dating">speedDate</a> |
+  <a href="/messages">Messages</a> |
+  <a href="/login">Logout</a>
+</nav>
+  
+  <footer>
+    <p>&copy; 2024 LoveConnect. All rights reserved.</p>
+    <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
+  </footer>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+       // Extract username from query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('Username');
+    
+    // Display username
+    if (username) {
+      document.getElementById('Username').textContent = username;
+    }
+      // Function to fetch user data
+      function fetchUserData() {
+            fetch('/get-user-data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('username').textContent = data.username;
+                    } else {
+                        document.getElementById('username').textContent = 'Guest';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error);
+                    document.getElementById('username').textContent = 'Guest';
+                });
+        }
+
+        // Fetch user data on page load
+        window.onload = fetchUserData;
+     // Toggle dropdown menu
+     const menuIcon = document.getElementById('menu-icon');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+    menuIcon.addEventListener('click', () => {
+      dropdownMenu.classList.toggle('show');
+    });
+
+    // Logout functionality
+    const logoutButton = document.getElementById('logout-button');
+    logoutButton.addEventListener('click', () => {
+      fetch('/logout', { method: 'POST' })
+        .then(response => response.text())
+        .then(() => {
+          window.location.href = '/';
+        });
+    });
+
+      fetch('/api/activity')
+        .then(response => response.json())
+        .then(activity => {
+          const feed = document.getElementById('activity-feed');
+          activity.forEach(item => {
+            const activityItem = document.createElement('div');
+            activityItem.className = 'activity-item';
+            activityItem.textContent = `${item.action} on ${new Date(item.timestamp).toLocaleString()}`;
+            feed.appendChild(activityItem);
+          });
+        });
+
+    const ws = new WebSocket('ws://localhost:3000');
+    ws.onmessage = event => {
+      const notification = JSON.parse(event.data);
+      if (notification.type === 'friend-request') {
+        alert(`You have a new friend request from user ${notification.from}`);
+      }
+    };
+  });
+</script>
+</body>
+</html>
+
+
+

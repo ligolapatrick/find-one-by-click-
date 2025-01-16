@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speed Dating - Find One by Click</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .speed-dating-container {
+      text-align: center;
+      margin-top: 50px;
+    }
+    .timer {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    .message-box {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px auto;
+      width: 80%;
+      height: 300px;
+      overflow-y: auto;
+    }
+    .message-form {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .message-form textarea {
+      width: 70%;
+      height: 50px;
+      resize: none;
+    }
+    .speed-dating-list {
+      margin-top: 30px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a> |
+    <a href="/profile">Profile</a> |
+    <a href="/matches">Matches</a> |
+    <a href="/free-today">Nearby Users</a> |
+    <a href="/messages">Messages</a> |
+    <a href="/speed-dating">Speed Dating</a> |
+    <a href="/login">Logout</a>
+  </nav>
+  <hr>
+  <div class="speed-dating-container">
+    <div class="timer" id="timer">180</div>
+    <div class="message-box" id="messageBox">
+      <!-- Messages will be displayed here -->
+    </div>
+    <form id="messageForm" class="message-form">
+      <textarea id="messageContent" name="content" required></textarea>
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <div class="speed-dating-list" id="speedDatingList">
+    <h3>Available Speed Dating Sessions</h3>
+    <ul id="sessionList">
+      <!-- Speed dating sessions will be listed here -->
+    </ul>
+    <input type="text" id="sessionName" placeholder="Enter session name" required>
+    <button id="createSession">Create Speed Dating Session</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let countdown = 180; // 3 minutes
+    const timerElement = document.getElementById('timer');
+    const messageBox = document.getElementById('messageBox');
+    const sessionList = document.getElementById('sessionList');
+    const createSessionButton = document.getElementById('createSession');
+    const sessionNameInput = document.getElementById('sessionName');
+    const socket = io();
+    let currentSession = '';
+
+    // Update the timer every second
+    const updateTimer = setInterval(() => {
+      if (countdown > 0) {
+        countdown--;
+        timerElement.textContent = countdown;
+      } else {
+        alert('Time is up! Moving to next user.');
+        socket.emit('endSpeedDatingSession', currentSession);
+        countdown = 180; // Reset timer for next round
+      }
+    }, 1000);
+
+    // Handle message form submission
+    document.getElementById('messageForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const content = document.getElementById('messageContent').value;
+      socket.emit('sendMessage', { content, session: currentSession });
+      document.getElementById('messageContent').value = '';
+    });
+
+    // Listen for incoming messages
+    socket.on('receiveMessage', (message) => {
+      const messageElement = document.createElement('div');
+      messageElement.style.border = '1px solid #ccc';
+      messageElement.style.borderRadius = '10px';
+      messageElement.style.padding = '10px';
+      messageElement.style.margin = '10px 0';
+      messageElement.textContent = `${message.sender}: ${message.content}`;
+      messageBox.appendChild(messageElement);
+      messageBox.scrollTop = messageBox.scrollHeight;
+    });
+
+    // Handle speed dating session creation
+    createSessionButton.addEventListener('click', () => {
+      const sessionName = sessionNameInput.value.trim();
+      if (sessionName) {
+        socket.emit('createSpeedDatingSession', sessionName);
+        currentSession = sessionName;
+      } else {
+        alert('Please enter a session name.');
+      }
+    });
+
+    // Listen for available speed dating sessions
+    socket.on('updateSessionList', (sessions) => {
+      sessionList.innerHTML = '';
+      sessions.forEach((session) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${session.name} - ${session.participants.length} user(s)`;
+        listItem.addEventListener('click', () => {
+          socket.emit('joinSpeedDatingSession', session.name);
+          currentSession = session.name;
+        });
+        sessionList.appendChild(listItem);
+      });
+    });
+
+    // Clear messages when session ends
+    socket.on('sessionEnded', () => {
+      messageBox.innerHTML = '';
+      countdown = 180;
+      timerElement.textContent = countdown;
+    });
+
+    // Fetch initial list of sessions
+    socket.emit('requestSessionList');
+  </script>
+</body>
+</html>

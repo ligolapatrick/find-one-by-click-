@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - find one-LoveConnect</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://connect.facebook.net/en_US/sdk.js" async defer></script>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-logo">
+            <img src="images/LoveConnect logo.png" alt="LoveConnect Logo">
+        </div>
+        <div class="nav-contact">
+            <span><img src="images/Limav-Flat-Gradient-Social-Whatsapp.512.png" alt="WhatsApp Icon"> 0888202246</span>
+            <span><img src="images/Graphicloads-100-Flat-Email-2.256 (1).png" alt="ligolapatrick61@gmail.com icon">ligolapatrick61@gmail.com</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="login.html">Home</a></li>
+            <li><a href="about-app.html">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="registration.html">Register</a></li>
+            <li><a href="login.html">Login</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section class="form-section">
+            <div class="form-background">
+                <h2>Register</h2>
+                <form action="/register" method="post">
+                  <label for="username">Username:</label>
+                  <input type="text" id="username" name="username" required><br>
+                  <label for="password">Password (6 characters long):</label>
+                  <input type="password" id="password" name="password" required><br>
+                  <label for="phone">Phone Number:</label>
+                  <select id="countryCode" name="countryCode" required>
+                    <option value="+1">+1 (USA)</option>
+                    <option value="+44">+44 (UK)</option>
+                    <option value="+81">+81 (Japan)</option>
+                    <option value="+265">+265 (Malawi)</option>
+                    <!-- Add more country codes as needed -->
+                  </select>
+                  <input type="text" id="phone" name="phone" required><br>
+                  <button type="submit">Register</button>
+                  <p>Already have an account? <a href="login.html">Login here</a></p>
+                </form>
+                <div class="fb-login-button" 
+                     data-width="" 
+                     data-size="large" 
+                     data-button-type="continue_with" 
+                     data-layout="default" 
+                     data-auto-logout-link="false" 
+                     data-use-continue-as="false"
+                     data-scope="public_profile,email"
+                     data-onlogin="checkLoginState()">
+                </div>
+                <p id="error-message" style="color: red;"></p>
+            
+            </div>
+        </section>
+        <section class="promo-section">
+            <h3>Why Choose LoveConnect?</h3>
+            <ul>
+                <li>Connect with like-minded individuals looking for love.</li>
+                <li>Advanced matchmaking algorithms to find your perfect match.</li>
+                <li>Secure and private platform to ensure your safety.</li>
+                <li>Fun and interactive features to make dating enjoyable.</li>
+            </ul>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 LoveConnect. All rights reserved.</p>
+        <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a></p>
+    </footer>
+    <script>
+        // Facebook SDK Initialization
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '3137132503104109',  // Your Facebook App ID
+                cookie     : true,  // Enable cookies to allow the server to access the session.
+                xfbml      : true,  // Parse social plugins on this webpage.
+                version    : 'v10.0' // Use this Graph API version for this call.
+            });
+
+            FB.AppEvents.logPageView();   
+        };
+
+        function checkLoginState() {
+            FB.getLoginStatus(function(response) {
+                statusChangeCallback(response);
+            });
+        }
+
+        function statusChangeCallback(response) {
+            if (response.status === 'connected') {
+                FB.api('/me?fields=id,name,email', function(response) {
+                    saveUserData(response); // Save user data
+                    // Redirect to dashboard.html after successful Facebook login
+                    window.location.href = "dashboard.html";
+                });
+            } else {
+                document.getElementById('error-message').textContent = 'Please log into this app.';
+            }
+        }
+
+        function saveUserData(userData) {
+            fetch('/save-facebook-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to save user data');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

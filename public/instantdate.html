@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instant Date</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .user-card-container {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      justify-content: start;
+      padding-left: 10px; /* Adjust for padding */
+    }
+    .user-card {
+      position: relative;
+      width: 500px; /* Increased width for better visibility */
+      margin: 10px; /* Adjusted margin for better spacing */
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      scroll-snap-align: start;
+      flex: 0 0 auto;
+    }
+    .user-card img {
+      width: 100%;
+      height: 500px; /* Increased height for better visibility */
+      object-fit: cover;
+    }
+    .message-input {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 5px;
+      border-radius: 5px;
+    }
+    .message-input input {
+      flex: 1;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .message-input button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .message-input button:hover {
+      background-color: #0056b3;
+    }
+    .user-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Instant Date</h1>
+    <nav class="navbar">
+      <ul>
+        <li><a href="instantdate.html">Instant Date</a></li>
+        <li><a href="secretcrush.html">SecretCrush</a></li>
+        <li><a href="moodmatcher.html">MoodMatcher</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="instant-date-section">
+      <h2>Find Someone Free to Meet Now</h2>
+      <div id="instant-date-container" class="user-card-container">
+        <!-- Available users will be dynamically loaded here -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchCurrentlyOnlineUsers();
+    });
+
+    function fetchCurrentlyOnlineUsers() {
+      fetch('/api/currently-online-users')
+        .then(response => response.json())
+        .then(users => {
+          const container = document.getElementById('instant-date-container');
+          container.innerHTML = '';
+          users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.className = 'user-card';
+            userElement.innerHTML = `
+              <img src="${user.profilePicture}" alt="${user.username}" onclick="startChat('${user.id}')">
+              <div class="user-info">
+                <h2>${user.username}</h2>
+                <p><strong>Age:</strong> ${user.age || 'Not Provided'}</p>
+                <p><strong>Interests:</strong> ${user.interests || 'Not Provided'}</p>
+              </div>
+            `;
+            container.appendChild(userElement);
+          });
+        })
+        .catch(error => console.error('Error fetching users:', error));
+    }
+
+    function startChat(userId) {
+      window.location.href = `/messages.html?userId=${userId}`;
+    }
+
+    // Swiping functionality
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    const container = document.querySelector('.user-card-container');
+    container.addEventListener('mousedown', (e) => {
+      isDown = true;
+      container.classList.add('active');
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+    });
+    container.addEventListener('mouseleave', () => {
+      isDown = false;
+      container.classList.remove('active');
+    });
+    container.addEventListener('mouseup', () => {
+      isDown = false;
+      container.classList.remove('active');
+    });
+    container.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX) * 3; //scroll-fast
+      container.scrollLeft = scrollLeft - walk;
+    });
+  </script>
+</body>
+</html>

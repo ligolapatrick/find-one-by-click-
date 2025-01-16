@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nearby Users - Find One by Click</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .profile-card {
+      width: 300px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+    .profile-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 50%;
+    }
+    .hidden {
+      display: none;
+    }
+    .actions {
+      margin-top: 10px;
+    }
+    .actions button {
+      margin: 5px;
+    }
+    .online-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .online-status span {
+      margin-left: 10px;
+    }
+    .online {
+      color: green;
+    }
+    .offline {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a> |
+    <a href="/profile">Profile</a> |
+    <a href="/matches">Matches</a> |
+    <a href="/nearby">Nearby Users</a> |
+    <a href="/messages">Messages</a> |
+    <a href="/login">Logout</a> |
+    <a href="/free-today">Free Today</a>
+  </nav>
+  <hr>
+  <h2>Nearby Users</h2>
+  <div id="nearbyList">
+    <!-- Nearby users will be displayed here -->
+  </div>
+  <script>
+    // Replace 'yourUserId' with the logged-in user's user ID
+    const userId = 'yourUserId';
+
+    // Fetch users based on status
+    function fetchUsers(status) {
+      fetch(`/api/users-status?status=${status}`)
+        .then(response => response.json())
+        .then(users => {
+          const nearbyList = document.getElementById('nearbyList');
+          nearbyList.innerHTML = '';
+          users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.classList.add('profile-card');
+            userElement.innerHTML = `
+              <img src="${user.profilePicture}" alt="${user.username}'s profile picture">
+              <h3>${user.username}</h3>
+              <p>Age: ${user.age}</p>
+              <p>Gender: ${user.gender}</p>
+              <p>Interests: ${user.interests.join(', ')}</p>
+              <div class="online-status">
+                <span class="${user.online ? 'online' : 'offline'}">${user.online ? 'Online' : 'Offline'}</span>
+              </div>
+              <div class="actions">
+                <button onclick="likeProfile(${user.userId})">Like</button>
+                <button onclick="dislikeProfile(${user.userId})">Dislike</button>
+                <button onclick="startChat(${user.userId})">Message</button>
+              </div>
+            `;
+            userElement.querySelector('img').addEventListener('click', (e) => handleTap(e, user.userId));
+            nearbyList.appendChild(userElement);
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching users by status:', error);
+        });
+    }
+
+    let tapTimeout;
+    let tapCount = 0;
+
+    function handleTap(event, userId) {
+      tapCount++;
+      if (tapTimeout) {
+        clearTimeout(tapTimeout);
+      }
+
+      tapTimeout = setTimeout(() => {
+        if (tapCount === 2) {
+          sendAdmirerMessage(userId);
+        } else if (tapCount === 3) {
+          window.location.href = `/messages?userId=${userId}`;
+        }
+        tapCount = 0;
+      }, 300);
+    }
+
+    function startChat(userId) {
+      window.location.href = `/messages?to=${userId}`;
+    }
+
+    function likeProfile(userId) {
+      console.log(`Liked profile of user ${userId}`);
+      // Implement your like profile logic here
+    }
+
+    function dislikeProfile(userId) {
+      console.log(`Disliked profile of user ${userId}`);
+      // Implement your dislike profile logic here
+    }
+
+    function sendAdmirerMessage(toUserId) {
+      const messageContent = "You have a secret crush! Accept or Decline.";
+      fetch('/api/send-admirer-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fromUserId: userId, toUserId, content: messageContent })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Secret admirer message sent successfully!');
+        } else {
+          alert('Failed to send secret admirer message.');
+        }
+      })
+      .catch(error => {
+        console.error('Error sending secret admirer message:', error);
+      });
+    }
+
+    // Fetch nearby users initially
+    fetchUsers('online'); // Fetch online users initially
+
+    // Add swiping functionality
+    let startX;
+    let currentIndex = 0;
+
+    document.addEventListener('touchstart', function (event) {
+      startX = event.touches[0].clientX;
+    });
+
+    document.addEventListener('touchend', function (event) {
+      const endX = event.changedTouches[0].clientX;
+      const deltaX = endX - startX;
+
+      if (deltaX > 50) {
+        // Swipe right
+        currentIndex = (currentIndex - 1 + nearbyList.children.length) % nearbyList.children.length;
+      } else if (deltaX < -50) {
+        // Swipe left
+        currentIndex = (currentIndex + 1) % nearbyList.children.length;
+      }
+
+      nearbyList.scrollTo({
+        left: nearbyList.children[currentIndex].offsetLeft,
+        behavior: 'smooth'
+      });
+    });
+  </script>
+</body>
+</html>
