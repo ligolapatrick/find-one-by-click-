@@ -12,14 +12,12 @@
       padding: 0;
       background-color: #f4f4f4;
     }
-
     header {
       background-color: #ff4d4d;
       color: white;
       text-align: center;
       padding: 20px;
     }
-
     main {
       padding: 20px;
     }
@@ -38,7 +36,7 @@
       border: 1px solid #ccc;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 4px 8px #2415151a;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       text-align: center;
       scroll-snap-align: start;
       flex: 0 0 auto;
@@ -82,15 +80,25 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: #ffffff86;
-      color: hwb(0 11% 82% / 0.718);
+      background: rgba(255, 255, 255, 0.8);
       padding: 10px;
       text-align: left;
       font-size: 0.9em;
     }
   </style>
+
 </head>
 <body>
+    <nav>
+      <a href="/">Home</a> |
+      <a href="daily-discovery.html">daily-discovery</a> |
+      <a href="fitness-buddies.html">fitness-buddies</a> |
+      <a href="relationship-goals.html">relationship-goals</a> |
+      <a href="quick-matches.html">quick-matches</a> |
+      <a href="settings.html">settings</a> |
+      <a href="login.html">Logout</a>
+    </nav>
+    <hr>
   <header>
     <h1>Matches</h1>
   </header>
@@ -110,7 +118,7 @@
             const userCard = document.createElement('div');
             userCard.className = 'user-card';
             userCard.innerHTML = `
-              <a href="/messages.html?userId=${user.id}">
+              <a href="/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}">
                 <img src="${user.profilePicture || 'default-profile.png'}" alt="${user.username}">
                 <div class="user-info">
                   <h2>${user.username}</h2>

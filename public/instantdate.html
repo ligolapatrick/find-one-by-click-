@@ -31,35 +31,6 @@
       height: 500px; /* Increased height for better visibility */
       object-fit: cover;
     }
-    .message-input {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      display: flex;
-      align-items: center;
-      background-color: rgba(255, 255, 255, 0.8);
-      padding: 5px;
-      border-radius: 5px;
-    }
-    .message-input input {
-      flex: 1;
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .message-input button {
-      margin-left: 5px;
-      padding: 5px 10px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .message-input button:hover {
-      background-color: #0056b3;
-    }
     .user-info {
       position: absolute;
       bottom: 0;
@@ -72,19 +43,34 @@
       font-size: 0.9em;
     }
   </style>
+  <script>
+    // Subscription check script
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/check-subscription')
+        .then(response => response.json())
+        .then(data => {
+          if (!data.hasAccess) {
+            window.location.href = '/payment.html';
+          }
+        })
+        .catch(error => {
+          console.error('Error checking subscription status:', error);
+          window.location.href = '/payment.html';
+        });
+    });
+  </script>
 </head>
 <body>
-  <header>
-    <h1>Instant Date</h1>
-    <nav class="navbar">
-      <ul>
-        <li><a href="instantdate.html">Instant Date</a></li>
-        <li><a href="secretcrush.html">SecretCrush</a></li>
-        <li><a href="moodmatcher.html">MoodMatcher</a></li>
-      </ul>
-    </nav>
-  </header>
-
+  <nav>
+    <a href="/">Home</a> |
+    <a href="daily-discovery.html">daily-discovery</a> |
+    <a href="fitness-buddies.html">fitness-buddies</a> |
+    <a href="relationship-goals.html">relationship-goals</a> |
+    <a href="quick-matches.html">quick-matches</a> |
+    <a href="login.html">Logout</a>
+  </nav>
+  <hr>
+  <header></header>
   <main>
     <section class="instant-date-section">
       <h2>Find Someone Free to Meet Now</h2>
@@ -93,7 +79,6 @@
       </div>
     </section>
   </main>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       fetchCurrentlyOnlineUsers();

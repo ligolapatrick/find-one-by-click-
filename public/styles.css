@@ -91,7 +91,7 @@
 
 header {
     background-color: #ff4d4d;
-     background-image: url('images/Matches.jpg'); /* Update this with the path to your hero background image */
+     background-image: url('images/LoveConnect logo.png'); /* Update this with the path to your hero background image */
     background-size: cover;
     color: white;
     text-align: center;
@@ -192,7 +192,7 @@ header {
 footer {
     text-align: center;
     padding: 10px;
-    background-color: #ff4d4d;
+    background-color: hsl(0, 11%, 7%);
     color: white;
 }
 .nearby-users-section {
@@ -362,7 +362,7 @@ footer {
   }
   
   button {
-    background-color: #ff4d4d;
+    background-color: hsl(258, 32%, 47%);
     color: white;
     border: none;
     padding: 10px 20px;

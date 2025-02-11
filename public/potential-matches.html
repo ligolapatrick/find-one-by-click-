@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Potential Matches</title>
+  <style>
+    .profile-container {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    .profile-picture {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      margin-right: 10px;
+      object-fit: cover;
+    }
+    .profile-details {
+      flex: 1;
+    }
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .swipe-container {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      scroll-snap-type: x mandatory;
+    }
+    .swipe-container .profile-container {
+      scroll-snap-align: center;
+    }
+    /* Media Queries for smaller screens */
+@media only screen and (max-width: 768px) {
+  .user-card {
+      width: 100%;
+      margin: 0.5rem 0;
+  }
+
+  .top-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+  }
+
+  .top-nav a {
+      margin: 0.5rem 0;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  header {
+      padding: 0.5rem;
+  }
+
+  .user-card {
+      padding: 0.5rem;
+  }
+
+  .user-card-buttons button {
+      padding: 0.25rem 0.5rem;
+      margin: 0.25rem 0;
+  }
+
+  .top-nav a {
+      font-size: 1.2rem;
+  }
+}
+   /* Media Queries for Responsive Design */
+   @media (max-width: 768px) {
+    .user-card {
+      width: 90%; /* Adjusted width for smaller screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .user-card {
+      width: 100%; /* Full width for very small screens */
+    }
+    .message-input {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .message-input input {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .message-input button {
+      width: 100%;
+    }
+  }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a> |
+    <a href="profile.html">Profile</a> |
+    <a href="matches.html">Matches</a> |
+    <a href="messages.html">Messages</a> |
+    <a href="settings.html">settings</a> |
+    <a href="login.html">Logout</a>
+  </nav>
+  <hr>
+  <h1>Potential Matches</h1>
+  <div id="matches" class="swipe-container"></div>
+  <div class="loading" id="loading">Loading matches...</div>
+  <script>
+    async function fetchMatches() {
+      const userId = sessionStorage.getItem('userId');
+
+      try {
+        const response = await fetch(`/api/location-matches`);
+        const data = await response.json();
+
+        document.getElementById('loading').style.display = 'none';
+
+        const matchesDiv = document.getElementById('matches');
+        matchesDiv.innerHTML = '';
+
+        data.forEach(match => {
+          const matchDiv = document.createElement('div');
+          matchDiv.className = 'profile-container';
+          matchDiv.onclick = () => {
+            window.location.href = `/messages.html?userId=${match.id}&username=${encodeURIComponent(match.username)}`;
+          };
+
+          const profilePicture = match.profilePicture || 'path/to/placeholder/image.jpg';
+          matchDiv.innerHTML = `
+            <img src="${profilePicture}" alt="Profile Picture" class="profile-picture">
+            <div class="profile-details">
+              <p>Username: ${match.username}</p>
+              <p>Age: ${match.age}</p>
+              <p>Gender: ${match.gender}</p>
+              <p>Bio: ${match.bio}</p>
+              <p>Interests: ${match.interests ? match.interests.split(',').join(', ') : 'Not provided'}</p>
+            </div>
+          `;
+          matchesDiv.appendChild(matchDiv);
+        });
+      } catch (error) {
+        document.getElementById('loading').textContent = 'Failed to load matches. Please try again later.';
+      }
+    }
+
+    window.onload = fetchMatches;
+    // Function to show loader
+function showLoader() {
+  document.getElementById('loader').style.display = 'block';
+}
+
+// Function to hide loader
+function hideLoader() {
+  document.getElementById('loader').style.display = 'none';
+}
+ </script>
+</body>
+</html>

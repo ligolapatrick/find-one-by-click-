@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .payment-form {
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .payment-form h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .payment-form select,
+    .payment-form button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .payment-form button {
+      background-color: #007bff;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    .payment-form button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="payment-section">
+      <div class="payment-form">
+        <h2>Complete Your Payment</h2>
+        <form id="payment-form">
+          <select id="duration" required>
+            <option value="daily">Daily - k999.00</option>
+            <option value="weekly">Weekly - k4,999.00</option>
+            <option value="monthly">Monthly - k19,999.00</option>
+          </select>
+          <select id="payment-method" required>
+            <option value="tnm">TNM</option>
+            <option value="airtel">Airtel</option>
+          </select>
+          <button type="submit">Pay</button>
+        </form>
+        <div id="payment-status"></div>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.getElementById('payment-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const duration = document.getElementById('duration').value;
+      const paymentMethod = document.getElementById('payment-method').value;
+
+      const response = await fetch('/api/pay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ duration, paymentMethod })
+      });
+
+      if (response.ok) {
+        document.getElementById('payment-status').textContent = 'Payment successful! Redirecting...';
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        document.getElementById('payment-status').textContent = 'Payment not completed. Please try again.';
+      }
+    });
+  </script>
+</body>
+</html>

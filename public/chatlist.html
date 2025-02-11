@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat List - Find One by Click</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .chat-list {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0;
+            list-style: none;
+        }
+        .chat-list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .chat-list-item:hover {
+            background-color: #e9ecef;
+        }
+        .chat-list-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .chat-list-item div {
+            flex-grow: 1;
+        }
+        .chat-list-item strong {
+            display: block;
+        }
+        .chat-list-item small {
+            color: #666;
+        }
+        .chat-list-item .message-time {
+            font-size: 0.8em;
+            color: #999;
+        }
+        @media (max-width: 768px) {
+            .chat-list-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .chat-list-item img {
+                margin-bottom: 10px;
+            }
+        }
+        @media (max-width: 480px) {
+            .chat-list-item img {
+                width: 40px;
+                height: 40px;
+            }
+            .chat-list-item .message-time {
+                font-size: 0.7em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> | <a href="/profile">Profile</a> | <a href="/matches">Matches</a> | <a href="/nearby">Nearby Users</a> | <a href="/chatlist">Messages</a> | <a href="/login">Logout</a>
+    </nav>
+    <hr>
+    <h2>Your Chats</h2>
+    <div id="loading" style="text-align: center; margin-top: 20px;">Loading chats...</div>
+    <ul id="chatList" class="chat-list">
+        <!-- Chat items will be inserted here -->
+    </ul>
+    <script>
+        const userId = 'yourUserId'; // Replace this with dynamic userId
+
+        function fetchChatList() {
+            document.getElementById('loading').style.display = 'block';
+            fetch(`/api/chat-list?userId=${userId}`)
+                .then(response => response.json())
+                .then(users => {
+                    document.getElementById('loading').style.display = 'none';
+                    const chatList = document.getElementById('chatList');
+                    chatList.innerHTML = '';
+                    users.forEach(user => {
+                        const chatItem = document.createElement('li');
+                        chatItem.className = 'chat-list-item';
+
+                        const profilePicture = user.profilePicture ? user.profilePicture : 'default-profile.png';
+                        const lastMessageTime = user.lastMessageTime ? new Date(user.lastMessageTime).toLocaleTimeString() : 'N/A';
+
+                        chatItem.innerHTML = `
+                            <img src="${profilePicture}" alt="${user.username}">
+                            <div>
+                                <strong>${user.username}</strong>
+                                <small>${user.lastMessage || ''}</small>
+                                <div class="message-time">${lastMessageTime}</div>
+                            </div>
+                        `;
+                        chatItem.addEventListener('click', () => {
+                            window.location.href = `/messages.html?userId=${user.id}&username=${encodeURIComponent(user.username)}`;
+                        });
+                        chatList.appendChild(chatItem);
+                    });
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('chatList').innerHTML = '<p>Error loading chat list. Please try again later.</p>';
+                    console.error('Error fetching chat list:', error);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchChatList);
+    </script>
+</body>
+</html>

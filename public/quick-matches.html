@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Matches</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    nav {
+      background-color: #007bff;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+    nav a {
+      color: white;
+      margin: 0 10px;
+      text-decoration: none;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .timer {
+      font-size: 2em;
+      color: red;
+      text-align: center;
+    }
+    #chat-container {
+      flex-grow: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    #messages {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: #f4f4f4;
+    }
+    #messageInput {
+      display: flex;
+    }
+    #messageInput textarea {
+      flex-grow: 1;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      resize: none;
+      margin-right: 10px;
+    }
+    #messageInput button {
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    #messageInput button:hover {
+      background-color: #0056b3;
+    }
+    #decision {
+      display: none;
+      text-align: center;
+    }
+    .decision-button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .connect {
+      background-color: green;
+      color: white;
+    }
+    .skip {
+      background-color: red;
+      color: white;
+    }
+      /* Media Queries for Responsive Design */
+   @media (max-width: 768px) {
+    .user-card {
+      width: 90%; /* Adjusted width for smaller screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .user-card {
+      width: 100%; /* Full width for very small screens */
+    }
+    .message-input {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .message-input input {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .message-input button {
+      width: 100%;
+    }
+  }
+  </style>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let timeLeft = 180; // 3 minutes
+
+    function startTimer() {
+      const timerElement = document.getElementById('timer');
+      const interval = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          endQuickMatch();
+        } else {
+          timeLeft--;
+          timerElement.textContent = `Time Left: ${Math.floor(timeLeft / 60)}:${timeLeft % 60}`;
+        }
+      }, 1000);
+    }
+
+    socket.on('quickMatchStart', ({ roomName }) => {
+      document.getElementById('chat-container').style.display = 'flex';
+      startTimer();
+    });
+
+    function sendMessage() {
+      const message = document.getElementById('messageText').value;
+      // Implement logic to send the message to the server
+    }
+
+    function endQuickMatch() {
+      document.getElementById('decision').style.display = 'block';
+      // Logic to notify the server about the end of the session
+    }
+
+    function handleDecision(decision) {
+      fetch('/api/quick-match-end', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userDecision: decision, roomName })
+      }).then(response => {
+        if (response.ok) {
+          // Handle next steps based on user decision
+        } else {
+          alert('Error processing your decision. Please try again.');
+        }
+      }).catch(error => console.error('Error processing decision:', error));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Join the quick match queue on page load
+      fetch('/api/join-quick-match', { method: 'POST' })
+        .then(response => {
+          if (response.ok) {
+            console.log('Joined the quick match queue');
+          } else {
+            alert('Failed to join the quick match queue');
+          }
+        }).catch(error => console.error('Error joining queue:', error));
+    });
+  </script>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a> |
+    <a href="profile.html">Profile</a> |
+    <a href="matches.html">Matches</a> |
+    <a href="messages.html">Messages</a> |
+    <a href="settings.html">settings</a> |
+    <a href="login.html">Logout</a>
+  </nav>
+  <hr>
+  <h1>Quick Matches</h1>
+  <div id="timer" class="timer">Time Left: 3:00</div>
+  <div id="chat-container" style="display:none;">
+    <div id="messages"></div>
+    <div id="messageInput">
+      <textarea id="messageText" placeholder="Type your message here..."></textarea>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+  <div id="decision">
+    <p>Time's up! Would you like to connect further?</p>
+    <button class="decision-button connect" onclick="handleDecision('connect')">Connect</button>
+    <button class="decision-button skip" onclick="handleDecision('skip')">Skip</button>
+  </div>
+</body>
+</html>

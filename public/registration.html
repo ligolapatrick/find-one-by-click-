@@ -4,8 +4,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - find one-LoveConnect</title>
-    <link rel="stylesheet" href="styles.css">
     <script src="https://connect.facebook.net/en_US/sdk.js" async defer></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('images/background.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+        }
+        .navbar img {
+            height: 50px;
+        }
+        .nav-logo, .nav-contact, .nav-links {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .nav-contact span {
+            margin: 0 10px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            gap: 40px;
+        }
+        .nav-links li {
+            display: inline;
+            margin: 0 10px;
+        }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+        }
+        .form-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .form-background {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            width: 300px;
+            text-align: center;
+        }
+        .form-background h2 {
+            margin-bottom: 20px;
+        }
+        .form-background label {
+            display: block;
+            text-align: left;
+            margin-bottom: 5px;
+        }
+        /* Form Sections */
+.form-section {
+    background-image: url('/images/Matches.jpg'); /* Your path */
+    background-size: cover;
+    background-position: cover;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+}
+
+        .form-background input, .form-background select, .form-background button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+        .form-background button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .form-background button:hover {
+            background-color: #0056b3;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -30,21 +128,21 @@
             <div class="form-background">
                 <h2>Register</h2>
                 <form action="/register" method="post">
-                  <label for="username">Username:</label>
-                  <input type="text" id="username" name="username" required><br>
-                  <label for="password">Password (6 characters long):</label>
-                  <input type="password" id="password" name="password" required><br>
-                  <label for="phone">Phone Number:</label>
-                  <select id="countryCode" name="countryCode" required>
-                    <option value="+1">+1 (USA)</option>
-                    <option value="+44">+44 (UK)</option>
-                    <option value="+81">+81 (Japan)</option>
-                    <option value="+265">+265 (Malawi)</option>
-                    <!-- Add more country codes as needed -->
-                  </select>
-                  <input type="text" id="phone" name="phone" required><br>
-                  <button type="submit">Register</button>
-                  <p>Already have an account? <a href="login.html">Login here</a></p>
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required><br>
+                    <label for="password">Password (6 characters long):</label>
+                    <input type="password" id="password" name="password" required><br>
+                    <label for="phone">Phone Number:</label>
+                    <select id="countryCode" name="countryCode" required>
+                        <option value="+1">+1 (USA)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+81">+81 (Japan)</option>
+                        <option value="+265">+265 (Malawi)</option>
+                        <!-- Add more country codes as needed -->
+                    </select>
+                    <input type="text" id="phone" name="phone" required><br>
+                    <button type="submit">Register</button>
+                    <p>Already have an account? <a href="login.html">Login here</a></p>
                 </form>
                 <div class="fb-login-button" 
                      data-width="" 
@@ -57,7 +155,6 @@
                      data-onlogin="checkLoginState()">
                 </div>
                 <p id="error-message" style="color: red;"></p>
-            
             </div>
         </section>
         <section class="promo-section">

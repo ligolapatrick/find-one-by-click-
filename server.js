@@ -7,6 +7,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const session = require('express-session'); // Import express-session
 const { Sequelize, DataTypes, Op } = require('sequelize');
+const router = express.Router();
 
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
@@ -83,6 +84,58 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false
+  },
+  relationshipGoals: {
+    type: DataTypes.STRING,
+    allowNull: true // Add this line for relationship goals
+  },
+  fitnessGoals: { // Add this line for fitness goals
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+    notifications: {
+    type: DataTypes.STRING,
+    defaultValue: 'all',
+  },
+  privacy: {
+    type: DataTypes.STRING,
+    defaultValue: 'public',
+  },
+  theme: {
+    type: DataTypes.STRING,
+    defaultValue: 'light',
+  },
+  language: {
+    type: DataTypes.STRING,
+    defaultValue: 'en',
+  },
+  subscription: {
+    type: DataTypes.STRING,
+    defaultValue: 'monthly',
+  },
+  fontSize: {
+    type: DataTypes.STRING,
+    defaultValue: 'medium',
+  },
+  twoFactorAuth: {
+    type: DataTypes.STRING,
+    defaultValue: 'disabled',
+  },
+  onlineStatus: {
+    type: DataTypes.STRING,
+    defaultValue: 'enabled',
+  },
+  lastSeen: {
+    type: DataTypes.STRING,
+    defaultValue: 'everyone',
+  },
+  readReceipts: {
+    type: DataTypes.STRING,
+    defaultValue: 'enabled',
+  },
+  autoDownload: {
+    type: DataTypes.STRING,
+    defaultValue: 'wifi',
   }
 });
 
@@ -120,9 +173,21 @@ const Message = sequelize.define('Message', {
   },
   messageType: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    defaultValue: 'text' // Default messageType is 'text'
   }
 });
+
+// Define associations
+User.hasMany(Message, { as: 'SentMessages', foreignKey: 'fromUserId' });
+User.hasMany(Message, { as: 'ReceivedMessages', foreignKey: 'toUserId' });
+Message.belongsTo(User, { as: 'Sender', foreignKey: 'fromUserId' });
+Message.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
+
+sequelize.sync();
+
+module.exports = { User, Message };
+
 
 // Define the Event model
 const Event = sequelize.define('Event', {
@@ -151,16 +216,6 @@ const LiveStream = sequelize.define('LiveStream', {
     allowNull: false
   }
 });
-
-// Define associations
-User.hasMany(Message, { as: 'SentMessages', foreignKey: 'fromUserId' });
-User.hasMany(Message, { as: 'ReceivedMessages', foreignKey: 'toUserId' });
-Message.belongsTo(User, { as: 'Sender', foreignKey: 'fromUserId' });
-Message.belongsTo(User, { as: 'Receiver', foreignKey: 'toUserId' });
-
-sequelize.sync();
-
-module.exports = { User, Message };
 
 // Sync database
 sequelize.sync({ force: true }); // Drop and recreate the tables
@@ -292,6 +347,11 @@ app.get('/speed-dating', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'speed-dating.html'));
 });
 
+// Route to serve the chatlist.html file
+app.get('/chatlist', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chatlist.html'));
+});
+
 // Route to serve the about-app.html file
 app.get('/about-app', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'about-app.html'));
@@ -330,6 +390,16 @@ app.get('/nearby-users', requireLogin, (req, res) => {
 // Route to serve the virtualmeetup.html file
 app.get('/virtualmeetup', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'virtualmeetup.html'));
+});
+
+// Route to serve the anonymous-chat-room.html file
+app.get('/anonymous-chat-room', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'anonymous-chat-room.html'));
+});
+
+// Route to serve the chat-zone.html file
+app.get('/chat-zone', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chat-zone.html'));
 });
 
 // Route to get all users
@@ -532,71 +602,9 @@ app.get('/api/online-users', async (req, res) => {
 });
 
 // Route to get messages between users
-app.get('/api/messages', async (req, res) => {
-  const { userId, chatUserId } = req.query;
-  try {
-    const messages = await Message.findAll({
-      where: {
-        [Sequelize.Op.or]: [
-          { fromUserId: userId, toUserId: chatUserId },
-          { fromUserId: chatUserId, toUserId: userId }
-        ]
-      },
-      order: [['timestamp', 'ASC']]
-    });
-    res.json(messages);
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-// Send a message
-app.post('/api/send-message', requireLogin, async (req, res) => {
-  const { toUserId, content } = req.body;
-
-  // Log the user IDs for debugging
-  console.log('Sending message from:', req.session.userId, 'to:', toUserId);
-
-  // Validate the toUserId parameter
-  if (!toUserId) {
-    return res.status(400).json({ error: 'Missing required parameter: toUserId' });
-  }
-
-  try {
-    const message = await Message.create({
-      fromUserId: req.session.userId,
-      toUserId,
-      content,
-      timestamp: new Date()
-    });
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// Send a message
-app.post('/api/send-message', async (req, res) => {
-  const { toUserId, content } = req.body;
-  const fromUserId = req.session.userId; // Replace with dynamic userId from session
-
-  try {
-    const message = await Message.create({ fromUserId, toUserId, content });
-    res.sendStatus(200);
-  } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// Fetch messages for a specific conversation
-app.get('/api/messages', async (req, res) => {
-  const { userId, chatUserId } = req.query;
-
-  if (!userId || !chatUserId) {
-    return res.status(400).json({ error: 'Missing userId or chatUserId' });
-  }
+app.get('/api/messages', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const chatUserId = req.query.chatUserId;
 
   try {
     const messages = await Message.findAll({
@@ -606,23 +614,46 @@ app.get('/api/messages', async (req, res) => {
           { fromUserId: chatUserId, toUserId: userId }
         ]
       },
-      order: [['createdAt', 'ASC']]
+      order: [['timestamp', 'ASC']]
     });
 
-    const chatUser = await User.findByPk(chatUserId, {
-      attributes: ['id', 'username']
-    });
+    const chatUser = await User.findByPk(chatUserId, { attributes: ['id', 'username', 'profilePicture'] });
 
     res.json({ messages, chatUser });
   } catch (error) {
     console.error('Error fetching messages:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).send('Internal Server Error');
   }
 });
 
+// Send a message
+app.post('/api/send-message', requireLogin, async (req, res) => {
+    const { toUserId, content } = req.body;
+    const fromUserId = req.session.userId; // Ensure this is the dynamic userId
+
+    if (!toUserId || !content) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    try {
+        const newMessage = await Message.create({
+            fromUserId,
+            toUserId,
+            content,
+            timestamp: new Date(),
+            messageType: 'text' // Ensure this is set if it's not in the request body
+        });
+        console.log('Message created:', newMessage);
+        res.status(201).json(newMessage);
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 // Fetch the chat list for a user
-app.get('/api/chat-list', async (req, res) => {
-  const userId = req.query.userId;
+app.get('/api/chat-list', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
 
   try {
     const messages = await Message.findAll({
@@ -632,10 +663,7 @@ app.get('/api/chat-list', async (req, res) => {
           { toUserId: userId }
         ]
       },
-      attributes: [
-        [sequelize.fn('DISTINCT', sequelize.col('fromUserId')), 'fromUserId'],
-        [sequelize.fn('DISTINCT', sequelize.col('toUserId')), 'toUserId']
-      ]
+      attributes: ['fromUserId', 'toUserId']
     });
 
     const chatUserIds = new Set();
@@ -656,19 +684,21 @@ app.get('/api/chat-list', async (req, res) => {
   }
 });
 
-// Routes
+// API to get mood matches
 app.get('/api/match-mood', async (req, res) => {
-  const { userId } = req.session;
+  const userId = req.session.userId;
   try {
     const user = await User.findByPk(userId);
     if (!user) {
       return res.status(404).send('User not found');
     }
 
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male';
     const matches = await User.findAll({
-      attributes: ['id', 'username', 'mood', 'profilePicture'],
+      attributes: ['id', 'username', 'mood', 'profilePicture', 'gender'],
       where: {
-        mood: user.mood
+        mood: user.mood,
+        gender: oppositeGender
       }
     });
     res.json(matches);
@@ -678,6 +708,7 @@ app.get('/api/match-mood', async (req, res) => {
   }
 });
 
+// API to update mood
 app.post('/api/update-mood', async (req, res) => {
   const { mood } = req.body;
   const userId = req.session.userId; // Assuming userId is stored in the session
@@ -696,14 +727,36 @@ app.post('/api/update-mood', async (req, res) => {
   }
 });
 
+// Send a mood match request
 app.post('/api/send-mood-match-request', async (req, res) => {
-  const { userId } = req.body; // ID of the user to send match request to
+  const { userId, mood } = req.body;
   const fromUserId = req.session.userId; // Assuming userId is stored in the session
-  // Implement logic for sending match request
-  // For now, we'll just log the request
-  console.log(`Match request sent from ${fromUserId} to ${userId}`);
-  res.sendStatus(200);
+
+  try {
+    // Create a mood match request message for both sender and receiver
+    await Message.create({
+      fromUserId,
+      toUserId: userId,
+      content: 'You have sent a mood match request.',
+      messageType: 'moodMatch'
+    });
+
+    await Message.create({
+      fromUserId: userId,
+      toUserId: fromUserId,
+      content: 'You have received a mood match request.',
+      messageType: 'moodMatch'
+    });
+
+    console.log(`Mood match request sent from user ${fromUserId} to user ${userId}`);
+    res.status(200).send('Mood match request sent!');
+  } catch (error) {
+    console.error('Error sending mood match request:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
+
+
 // Routes
 app.get('/api/nearby-users', async (req, res) => {
   try {
@@ -913,11 +966,23 @@ app.get('/api/matches', async (req, res) => {
 });
 
 // Route to send a message
-app.post('/api/send-message', async (req, res) => {
-  const { from, to, content } = req.body;
+app.post('/api/send-message', requireLogin, async (req, res) => {
+  const { toUserId, content } = req.body;
+  const fromUserId = req.session.userId;
+
+  if (!toUserId || !content) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
   try {
-    await Message.create({ from, to, content, timestamp: new Date() });
-    res.sendStatus(200);
+    const newMessage = await Message.create({
+      fromUserId,
+      toUserId,
+      content,
+      timestamp: new Date()
+    });
+    console.log('Message created:', newMessage);
+    res.status(201).json(newMessage);
   } catch (error) {
     console.error('Error sending message:', error);
     res.status(500).send('Internal Server Error');
@@ -1013,16 +1078,28 @@ app.post('/api/send-admirer-message', requireLogin, async (req, res) => {
 });
 
 // Fetch received messages
-app.get('/api/received-messages', requireLogin, async (req, res) => {
-  const { userId } = req.query;
+// Fetch all messages between two users
+app.get('/api/messages', requireLogin, async (req, res) => {
+  const { userId, chatUserId } = req.query;
+
   try {
     const messages = await Message.findAll({
-      where: { toUserId: userId },
-      include: [{ model: User, as: 'Sender', attributes: ['username'] }]
+      where: {
+        [Op.or]: [
+          { fromUserId: userId, toUserId: chatUserId },
+          { fromUserId: chatUserId, toUserId: userId }
+        ]
+      },
+      include: [
+        { model: User, as: 'Sender', attributes: ['username'] },
+        { model: User, as: 'Receiver', attributes: ['username'] }
+      ],
+      order: [['timestamp', 'ASC']]
     });
+
     res.json(messages);
   } catch (error) {
-    console.error('Error fetching received messages:', error);
+    console.error('Error fetching messages:', error);
     res.status(500).send('Internal Server Error');
   }
 });
@@ -1039,20 +1116,6 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('User disconnected');
   });
-});
-// Route to get all messages for the logged-in user
-app.get('/api/messages', async (req, res) => {
-  const fromUserId = req.session.userId;
-  if (!fromUserId) {
-    return res.status(400).json({ error: 'User not logged in' });
-  }
-  try {
-    const messages = await Message.findAll({ where: { fromUserId } });
-    res.json(messages);
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).send('Internal Server Error');
-  }
 });
 
 // Route to fetch currently online users in the Instant Date feature
@@ -1108,63 +1171,70 @@ app.post('/api/leave-instant-date', async (req, res) => {
   }
 });
 
-let speedDatingSessions = {};
+let speedDatingSessions = [];
+
+app.post('/api/create-speed-dating', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  const { sessionName } = req.body;
+  const session = {
+    sessionName,
+    creatorId: userId,
+    participants: [userId],
+    isActive: false
+  };
+  speedDatingSessions.push(session);
+  res.status(200).json(session);
+});
+
+app.post('/api/join-speed-dating', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  const { sessionName } = req.body;
+  const session = speedDatingSessions.find(s => s.sessionName === sessionName);
+
+  if (session && !session.isActive) {
+    if (!session.participants.includes(userId)) {
+      session.participants.push(userId);
+    }
+    if (session.participants.length >= 10) {
+      session.isActive = true;
+    }
+    res.status(200).json(session);
+  } else {
+    res.status(404).send('Session not found or already active');
+  }
+});
+
+app.get('/api/available-speed-dating', (req, res) => {
+  const availableSessions = speedDatingSessions.filter(s => !s.isActive);
+  res.status(200).json(availableSessions);
+});
 
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  console.log('A user connected');
 
-  socket.on('createSpeedDatingSession', (sessionName) => {
-    speedDatingSessions[sessionName] = { host: socket.id, participants: [socket.id], messages: [] };
-    socket.join(sessionName);
-    socket.emit('sessionCreated', sessionName);
-    updateSessionList();
-  });
-
-  socket.on('joinSpeedDatingSession', (sessionName) => {
-    if (speedDatingSessions[sessionName]) {
-      speedDatingSessions[sessionName].participants.push(socket.id);
-      socket.join(sessionName);
-      socket.emit('sessionJoined', sessionName);
-      updateSessionList();
+  socket.on('joinSpeedDatingSession', (roomName) => {
+    socket.join(roomName);
+    const session = speedDatingSessions.find(s => `speedDating-${s.sessionName}` === roomName);
+    if (session) {
+      const participants = session.participants.map(id => ({ id, username: getUsernameById(id) }));
+      io.to(roomName).emit('updateParticipants', { participants });
     }
   });
 
-  socket.on('sendMessage', ({ content, session }) => {
-    const message = { sender: socket.id, content };
-    speedDatingSessions[session].messages.push(message);
-    io.to(session).emit('receiveMessage', message);
-  });
-
-  socket.on('endSpeedDatingSession', (sessionName) => {
-    if (speedDatingSessions[sessionName]) {
-      delete speedDatingSessions[sessionName];
-      io.to(sessionName).emit('sessionEnded');
-      updateSessionList();
-    }
+  socket.on('sendMessage', ({ roomName, message }) => {
+    io.to(roomName).emit('receiveMessage', { message, senderId: socket.id });
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    for (const sessionName in speedDatingSessions) {
-      const session = speedDatingSessions[sessionName];
-      if (session.host === socket.id) {
-        delete speedDatingSessions[sessionName];
-        io.to(sessionName).emit('sessionEnded');
-      } else {
-        session.participants = session.participants.filter(id => id !== socket.id);
-      }
-    }
-    updateSessionList();
+    console.log('A user disconnected');
   });
-
-  function updateSessionList() {
-    const sessions = Object.keys(speedDatingSessions).map(name => ({
-      name,
-      participants: speedDatingSessions[name].participants
-    }));
-    io.emit('updateSessionList', sessions);
-  }
 });
+
+function getUsernameById(userId) {
+  // Implement logic to get username by userId from the User model
+  const user = User.findByPk(userId);
+  return user ? user.username : 'Unknown';
+}
 
 // Fetch available voice chats
 app.get('/api/voice-chats', async (req, res) => {
@@ -1295,53 +1365,76 @@ app.get('/api/free-to-hangout', async (req, res) => {
 // Send hangout request
 app.post('/api/send-hangout-request', async (req, res) => {
   const { userId } = req.body;
+  const fromUserId = req.session.userId; // Assuming userId is stored in the session
+
   try {
-    const user = await User.findByPk(userId);
-    if (user) {
-      // Handle sending hangout request (e.g., notification)
-      res.sendStatus(200);
-    } else {
-      res.status(404).send('User not found');
-    }
+    // Create a hangout request message for both sender and receiver
+    await Message.create({
+      fromUserId,
+      toUserId: userId,
+      content: 'You have sent a hangout request.',
+      messageType: 'hangout'
+    });
+
+    await Message.create({
+      fromUserId: userId,
+      toUserId: fromUserId,
+      content: 'You have received a hangout request.',
+      messageType: 'hangout'
+    });
+
+    console.log(`Hangout request sent from user ${fromUserId} to user ${userId}`);
+    res.status(200).send('Hangout request sent!');
   } catch (error) {
     console.error('Error sending hangout request:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 // Send message
-app.post('/api/send-message', async (req, res) => {
-  const { toUserId, content } = req.body;
-  const fromUserId = 'yourUserId'; // Replace with dynamic userId
+app.post('/api/send-message', requireLogin, async (req, res) => {
+    const { toUserId, content } = req.body;
+    const fromUserId = req.session.userId; // Ensure this is the dynamic userId
 
-  try {
-    const message = await Message.create({ fromUserId, toUserId, content });
-    res.sendStatus(200);
-  } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).send('Internal Server Error');
-  }
+    if (!toUserId || !content) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    try {
+        const newMessage = await Message.create({
+            fromUserId,
+            toUserId,
+            content,
+            timestamp: new Date(),
+            messageType: 'text' // Ensure this is set if it's not in the request body
+        });
+        console.log('Message created:', newMessage);
+        res.status(201).json(newMessage);
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // Fetch messages
-app.get('/api/messages', async (req, res) => {
-  const userId = 'yourUserId'; // Replace with dynamic userId
+app.get('/api/messages', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const chatUserId = req.query.chatUserId;
 
   try {
     const messages = await Message.findAll({
-      where: { toUserId: userId },
-      order: [['timestamp', 'DESC']],
-      include: [{ model: User, as: 'fromUser', attributes: ['username'] }]
+      where: {
+        [Op.or]: [
+          { fromUserId: userId, toUserId: chatUserId },
+          { fromUserId: chatUserId, toUserId: userId }
+        ]
+      },
+      order: [['timestamp', 'ASC']]
     });
 
-    const formattedMessages = messages.map(msg => ({
-      fromUser: msg.fromUser.username,
-      fromUserId: msg.fromUserId,
-      content: msg.content,
-      timestamp: msg.timestamp
-    }));
+    const chatUser = await User.findByPk(chatUserId, { attributes: ['id', 'username'] });
 
-    res.json(formattedMessages);
+    res.json({ messages, chatUser });
   } catch (error) {
     console.error('Error fetching messages:', error);
     res.status(500).send('Internal Server Error');
@@ -1397,46 +1490,34 @@ app.get('/api/searching-for-relationship', async (req, res) => {
   }
 });
 
-// Send a message
-app.post('/api/send-message', async (req, res) => {
-  const { userId, message } = req.body;
-  const fromUserId = req.session.userId; // Replace with dynamic userId from session
-  try {
-    const newMessage = await Message.create({ fromUserId, toUserId: userId, content: message });
-    res.status(201).json(newMessage);
-  } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
+app.post('/api/send-message', requireLogin, async (req, res) => {
+    const { toUserId, content } = req.body;
+    const fromUserId = req.session.userId; // Ensure this is the dynamic userId
 
-// Fetch messages for a specific conversation
-app.get('/api/messages', async (req, res) => {
-  const { userId, chatUserId } = req.query;
-  if (!userId || !chatUserId) {
-    return res.status(400).json({ error: 'Missing userId or chatUserId' });
-  }
-  try {
-    const messages = await Message.findAll({
-      where: {
-        [Op.or]: [
-          { fromUserId: userId, toUserId: chatUserId },
-          { fromUserId: chatUserId, toUserId: userId }
-        ]
-      },
-      order: [['createdAt', 'ASC']]
-    });
-    const chatUser = await User.findByPk(chatUserId, { attributes: ['id', 'username'] });
-    res.json({ messages, chatUser });
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    if (!toUserId || !content) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    try {
+        const newMessage = await Message.create({
+            fromUserId,
+            toUserId,
+            content,
+            timestamp: new Date(),
+            messageType: 'text' // Ensure this is set if it's not in the request body
+        });
+        console.log('Message created:', newMessage);
+        res.status(201).json(newMessage);
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // Fetch the chat list for a user
-app.get('/api/chat-list', async (req, res) => {
-  const userId = req.query.userId;
+app.get('/api/chat-list', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+
   try {
     const messages = await Message.findAll({
       where: {
@@ -1446,28 +1527,487 @@ app.get('/api/chat-list', async (req, res) => {
         ]
       },
       attributes: [
-        [sequelize.fn('DISTINCT', sequelize.col('fromUserId')), 'fromUserId'],
-        [sequelize.fn('DISTINCT', sequelize.col('toUserId')), 'toUserId']
+        [sequelize.literal('DISTINCT `fromUserId`'), 'fromUserId'],
+        [sequelize.literal('DISTINCT `toUserId`'), 'toUserId']
       ]
     });
+
     const chatUserIds = new Set();
     messages.forEach(msg => {
       if (msg.fromUserId != userId) chatUserIds.add(msg.fromUserId);
       if (msg.toUserId != userId) chatUserIds.add(msg.toUserId);
     });
+
     const chatUsers = await User.findAll({
       where: { id: Array.from(chatUserIds) },
       attributes: ['id', 'username']
     });
+
     res.json(chatUsers);
   } catch (error) {
     console.error('Error fetching chat list:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Endpoint to fetch potential matches based on gender
+app.get('/api/location-matches', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const user = await User.findByPk(userId);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const oppositeGender = user.gender === 'male' ? 'female' : 'male';
+
+  try {
+    const matches = await User.findAll({
+      where: {
+        id: { [Op.ne]: userId },
+        gender: oppositeGender,
+        location: user.location // Matching by location
+      }
+    });
+    res.json(matches);
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/location-based-search', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const user = await User.findByPk(userId);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  try {
+    const matches = await User.findAll({
+      where: {
+        id: { [Op.ne]: userId },
+        location: user.location // Assuming matching by location
+      }
+    });
+    res.json(matches);
+  } catch (error) {
+    console.error('Error fetching location-based matches:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+let anonymousChatRooms = {};
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // User creates a new chat room
+  socket.on('createAnonymousChatRoom', (roomName) => {
+    if (!anonymousChatRooms[roomName]) {
+      anonymousChatRooms[roomName] = { creator: socket.id, participants: [], messageCount: 0 };
+      socket.join(roomName);
+      anonymousChatRooms[roomName].participants.push(socket.id);
+      socket.emit('chatRoomCreated', roomName);
+      console.log(`Chat room ${roomName} created by ${socket.id}`);
+    } else {
+      socket.emit('chatRoomExists', roomName);
+    }
+  });
+
+  // User joins an existing chat room
+  socket.on('joinAnonymousChatRoom', (roomName) => {
+    if (!anonymousChatRooms[roomName]) {
+      // Create the room if it doesn't exist
+      anonymousChatRooms[roomName] = { creator: null, participants: [], messageCount: 0 };
+    }
+    socket.join(roomName);
+    anonymousChatRooms[roomName].participants.push(socket.id);
+    socket.emit('joinedAnonymousChatRoom', roomName);
+    io.to(roomName).emit('userJoined', { roomId: roomName, userId: socket.id });
+
+    const creatorId = anonymousChatRooms[roomName].creator;
+    if (creatorId) {
+      io.to(creatorId).emit('notification', `User ${socket.id} has joined your chat room ${roomName}.`);
+    }
+    console.log(`${socket.id} joined chat room ${roomName}`);
+  });
+
+  // User sends a message in the chat room
+  socket.on('anonymousMessage', ({ roomName, message }) => {
+    if (anonymousChatRooms[roomName]) {
+      anonymousChatRooms[roomName].messageCount++;
+      io.to(roomName).emit('receiveAnonymousMessage', { message, senderId: socket.id });
+    } else {
+      console.error(`Room ${roomName} does not exist.`);
+    }
+  });
+
+  // Room creator kicks a user
+  socket.on('kickUser', ({ roomName, userId }) => {
+    if (anonymousChatRooms[roomName] && anonymousChatRooms[roomName].creator === socket.id) {
+      io.to(userId).emit('kickedFromRoom', roomName);
+      socket.to(userId).disconnect(true);
+      anonymousChatRooms[roomName].participants = anonymousChatRooms[roomName].participants.filter(id => id !== userId);
+      console.log(`${userId} was kicked from room ${roomName} by ${socket.id}`);
+    }
+  });
+
+  // User disconnects
+  socket.on('disconnect', () => {
+    console.log('A user disconnected:', socket.id);
+    for (const roomName in anonymousChatRooms) {
+      anonymousChatRooms[roomName].participants = anonymousChatRooms[roomName].participants.filter(id => id !== socket.id);
+      if (anonymousChatRooms[roomName].participants.length === 0) {
+        delete anonymousChatRooms[roomName];
+      }
+    }
+  });
+});
+
+// Endpoint to get all chat rooms with their participant count and message count
+app.get('/api/chatrooms', (req, res) => {
+  const rooms = Object.keys(anonymousChatRooms).map(roomName => ({
+    roomName,
+    participants: anonymousChatRooms[roomName].participants.length,
+    messageCount: anonymousChatRooms[roomName].messageCount,
+  }));
+
+  const popularRooms = rooms.sort((a, b) => b.participants - a.participants || b.messageCount - a.messageCount).slice(0, 5);
+  res.json({ rooms, popularRooms });
+});
+
+app.get('/api/daily-discovery', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+
+  try {
+    const totalUsers = await User.count({
+      where: { id: { [Op.ne]: userId } }
+    });
+
+    const randomOffset = Math.floor(Math.random() * totalUsers);
+
+    const [randomUser] = await User.findAll({
+      where: { id: { [Op.ne]: userId } },
+      offset: randomOffset,
+      limit: 1
+    });
+
+    res.json(randomUser);
+  } catch (error) {
+    console.error('Error fetching daily discovery user:', error);
     res.status(500).send('Internal Server Error');
   }
 });
 
-   // Start the server
-   const port = 3000;
-   server.listen(port, () => {
-     console.log(`Server is running on http://localhost:${port}`);
-   });
+app.get('/api/match-fitness', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male';
+    const matches = await User.findAll({
+      attributes: ['id', 'username', 'fitnessGoals', 'profilePicture', 'gender'],
+      where: {
+        fitnessGoals: user.fitnessGoals,
+        gender: oppositeGender
+      }
+    });
+    res.json(matches);
+  } catch (error) {
+    console.error('Error fetching fitness goal matches:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/api/update-fitness-goals', requireLogin, async (req, res) => {
+  const { fitnessGoals } = req.body;
+  const userId = req.session.userId;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (user) {
+      user.fitnessGoals = fitnessGoals;
+      await user.save();
+      res.sendStatus(200);
+    } else {
+      res.status(404).send('User not found');
+    }
+  } catch (error) {
+    console.error('Error updating fitness goals:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/api/send-fitness-match-request', requireLogin, async (req, res) => {
+  const { userId, fitnessGoals } = req.body;
+  const fromUserId = req.session.userId;
+
+  try {
+    // Create a fitness goals match request message for both sender and receiver
+    await Message.create({
+      fromUserId,
+      toUserId: userId,
+      content: 'You have sent a fitness goals match request.',
+      messageType: 'fitnessMatch'
+    });
+
+    await Message.create({
+      fromUserId: userId,
+      toUserId: fromUserId,
+      content: 'You have received a fitness goals match request.',
+      messageType: 'fitnessMatch'
+    });
+
+    console.log(`Fitness match request sent from user ${fromUserId} to user ${userId}`);
+    res.status(200).send('Fitness match request sent!');
+  } catch (error) {
+    console.error('Error sending fitness match request:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/match-goals', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    const oppositeGender = user.gender === 'male' ? 'female' : 'male';
+    const matches = await User.findAll({
+      attributes: ['id', 'username', 'relationshipGoals', 'profilePicture', 'gender'],
+      where: {
+        relationshipGoals: user.relationshipGoals,
+        gender: oppositeGender
+      }
+    });
+    res.json(matches);
+  } catch (error) {
+    console.error('Error fetching relationship goal matches:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/api/update-goals', requireLogin, async (req, res) => {
+  const { goals } = req.body;
+  const userId = req.session.userId;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (user) {
+      user.relationshipGoals = goals;
+      await user.save();
+      res.sendStatus(200);
+    } else {
+      res.status(404).send('User not found');
+    }
+  } catch (error) {
+    console.error('Error updating relationship goals:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+app.post('/api/send-goals-match-request', requireLogin, async (req, res) => {
+  const { userId, goals } = req.body;
+  const fromUserId = req.session.userId;
+
+  try {
+    // Create a relationship goals match request message for both sender and receiver
+    await Message.create({
+      fromUserId,
+      toUserId: userId,
+      content: 'You have sent a relationship goals match request.',
+      messageType: 'goalsMatch'
+    });
+
+    await Message.create({
+      fromUserId: userId,
+      toUserId: fromUserId,
+      content: 'You have received a relationship goals match request.',
+      messageType: 'goalsMatch'
+    });
+
+    console.log(`Goals match request sent from user ${fromUserId} to user ${userId}`);
+    res.status(200).send('Goals match request sent!');
+  } catch (error) {
+    console.error('Error sending goals match request:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+const quickMatchQueue = [];
+const chatRooms = {};
+
+app.post('/api/join-quick-match', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  quickMatchQueue.push(userId);
+  res.sendStatus(200);
+});
+
+const createChatRoom = (user1, user2) => {
+  const roomName = `quickMatch-${user1}-${user2}`;
+  chatRooms[roomName] = { users: [user1, user2], messages: [] };
+  return roomName;
+};
+
+setInterval(async () => {
+  if (quickMatchQueue.length >= 2) {
+    const user1 = quickMatchQueue.shift();
+    const user2 = quickMatchQueue.shift();
+    const roomName = createChatRoom(user1, user2);
+
+    io.to(user1).emit('quickMatchStart', { roomName });
+    io.to(user2).emit('quickMatchStart', { roomName });
+  }
+}, 5000);
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('joinRoom', (roomName) => {
+    socket.join(roomName);
+    socket.roomName = roomName;
+    console.log(`${socket.id} joined room ${roomName}`);
+  });
+
+  socket.on('sendMessage', ({ message, roomName }) => {
+    const userId = socket.handshake.session.userId;
+    const chatMessage = { sender: userId, message, timestamp: new Date() };
+    chatRooms[roomName].messages.push(chatMessage);
+    io.to(roomName).emit('receiveMessage', chatMessage);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected:', socket.id);
+  });
+});
+
+app.post('/api/search-users', requireLogin, async (req, res) => {
+  const { minAge, maxAge, interests, location } = req.body;
+
+  try {
+    const users = await User.findAll({
+      where: {
+        age: { [Op.between]: [minAge, maxAge] },
+        interests: { [Op.like]: `%${interests}%` },
+        location: { [Op.like]: `%${location}%` }
+      }
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users based on search criteria:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+//paymentMethod
+const Subscription = sequelize.define('Subscription', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  expiresAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+});
+
+module.exports = { Subscription };
+
+
+router.post('/api/pay', requireLogin, async (req, res) => {
+  const { duration, paymentMethod } = req.body;
+  const userId = req.session.userId;
+  let expiresAt;
+
+  switch (duration) {
+    case 'daily':
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+      break;
+    case 'weekly':
+      expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+      break;
+    case 'monthly':
+      expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+      break;
+    default:
+      return res.status(400).send('Invalid duration');
+  }
+
+  // Integrate with TNM or Airtel payment API here
+  // Example: await tnmAirtelPay(userId, paymentMethod);
+
+  // On successful payment
+  await Subscription.create({ userId, expiresAt });
+
+  res.status(200).send('Payment successful');
+});
+
+router.get('/api/check-subscription', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const subscription = await Subscription.findOne({ where: { userId, expiresAt: { [Sequelize.Op.gt]: new Date() } } });
+
+  if (subscription) {
+    res.json({ hasAccess: true });
+  } else {
+    res.json({ hasAccess: false });
+  }
+});
+
+module.exports = router;
+// Endpoint to get user settings
+app.get('/api/settings', async (req, res) => {
+  const userId = req.session.userId; // Ensure userId is available in session
+  try {
+    const user = await User.findByPk(userId);
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).send('User not found');
+    }
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Endpoint to update user settings
+app.post('/api/settings', async (req, res) => {
+  const userId = req.session.userId; // Ensure userId is available in session
+  const settings = req.body;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (user) {
+      for (const key in settings) {
+        if (settings.hasOwnProperty(key)) {
+          user[key] = settings[key];
+        }
+      }
+      await user.save();
+      res.status(200).send('Settings updated successfully');
+    } else {
+      res.status(404).send('User not found');
+    }
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Start the server
+const port = 3000;
+server.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
